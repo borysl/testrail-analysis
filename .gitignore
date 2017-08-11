@@ -1,0 +1,6 @@
+node_modules/
+*.png
+npm-debug.log
+*.xml
+*.bak
+*.csv

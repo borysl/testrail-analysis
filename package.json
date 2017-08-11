@@ -1,0 +1,25 @@
+{
+  "name": "testrail-analysis",
+  "version": "1.0.0",
+  "description": "Analyze results in test rail",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/borysl/testrail-analysis.git"
+  },
+  "keywords": [
+    "testrail",
+    "tpo",
+    "jira"
+  ],
+  "author": "Borys Lebeda",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/borysl/testrail-analysis/issues"
+  },
+  "homepage": "https://github.com/borysl/testrail-analysis#readme"
+}
