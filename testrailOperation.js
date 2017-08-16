@@ -74,6 +74,16 @@ function TestrailOperation(testrailSettings, teamSettings) {
     self.getCases = function (suiteId, callback) {
         waitResponseFromGetRequest(`get_cases/${projectId}&suite_id=${suiteId}`, callback);
     }
+
+    self.getSubmilestones = function (milestoneId, callback) {
+        waitResponseFromGetRequest(`get_milestone/${milestoneId}`, function(fullMilestone, err) {
+            if (fullMilestone) {
+                callback(fullMilestone.milestones, err);
+            } else {
+                callback(null, err);
+            }
+        });
+    }
     return self;
 }
 
