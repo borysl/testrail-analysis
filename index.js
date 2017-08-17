@@ -108,6 +108,34 @@ testrailOperation.getMilestones(function (milestones, err) {
                         console.log(`      untested_count: ${untested_count}`);
                         console.log(`      retest_count: ${retest_count}`);
                         console.log(`      failed_count: ${failed_count}`);
+
+                        // Getting sample suite:5910
+                        var runId = 5910
+                        testrailOperation.getSingleRun(runId, function(run, err) {
+                            handleFatal(err, `Can't get single run ${submilestone.id}`, 3);
+                            var runInfo = {
+                                id: run.id,
+                                suite_id : run.suite_id,
+                                name: run.name,
+                                milestone_id: run.milestone_id,
+                                project_id: run.project_id,
+                                created_on: new Date(run.created_on),
+                                completed_on: run.completed_on != null ? new Date(run.completed_on): null,
+                                created_by: run.created_by
+                            }
+                            testrailOperation.getCasesByProject(runInfo.project_id, runInfo.suite_id , function(testCases, err) {
+                                runInfo.testCases = testCases;
+                                handleFatal(err, `Can't get tests from suite project=${runInfo.project_id}, suite_id=${runInfo.suite_id}`, 4);
+                                testrailOperation.getResults(runInfo.id, function(testResults, err) {
+                                    handleFatal(err, `Can't get results from suite ${runInfo.id}`, 4);
+                                    runInfo.testResults = testResults;
+
+                                });
+                            });
+
+
+                        })
+
                     });
                 });
                 process.exit(0);
