@@ -6,6 +6,12 @@ var fs = require('fs');
 var testrailSettings = JSON.parse(fs.readFileSync(__base + 'testrailSettings.json', 'utf8'));
 var teamSettings = JSON.parse(fs.readFileSync(__base + 'teamSettings.json', 'utf8'));
 
+var JiraOperation = require(__base + 'jiraOperation');
+var jiraSettings = testrailSettings.jiraSettings;
+jiraSettings.login = testrailSettings.login;
+jiraSettings.password = testrailSettings.password;
+var jiraOperation = new JiraOperation(jiraSettings);
+
 const PROJECT_ID = teamSettings.project_id;
 const AUTOTESTS_ID = teamSettings.auto_tests_id;
 const AVERAGE_TIME = teamSettings.average_manual_test_execution_time;
@@ -89,11 +95,11 @@ function isExecutedManualTest(test) {
 }
 
 function extendRunInfo(runInfo, callback) {
-    testrailOperation.getTests(runInfo.id, function(tests, err) {
-        handleFatal(err, `Can't get results from suite ${runInfo.id}`, 4);
-        runInfo.manualTimeSpent = 0;
+    testrailOperation.getTests(runInfo.Id, function(tests, err) {
+        handleFatal(err, `Can't get results from suite ${runInfo.Id}`, 4);
+        runInfo['Manual Time Spent (min)'] = 0;
         tests.filter(isExecutedManualTest).forEach(test => {
-            runInfo.manualTimeSpent += extractMinutes(test.estimate);
+            runInfo['Manual Time Spent (min)'] += extractMinutes(test.estimate);
         });
         callback(runInfo);
     });
@@ -113,9 +119,9 @@ testrailOperation.getUsers(function (userList, err) {
     handleFatal(err, "Can't get users", 2);
     users = userList;
 
-    function getUserName(userId) {
+    function getUserEmail(userId) {
         var selectedUsers = users.filter(_ => _.id == userId);
-        return selectedUsers.length == 1 ? selectedUsers[0].name : null;
+        return selectedUsers.length == 1 ? selectedUsers[0].email.toLowerCase() : null;
     }
 
     testrailOperation.getRuns(function (runs, err) {
@@ -140,19 +146,19 @@ testrailOperation.getUsers(function (userList, err) {
                 if (!jiraKey) jiraKey = extractJiraTask(run.description);
                 
                 var runInfo = {
-                    id: run.id,
+                    Id: run.id,
                     suite_id : run.suite_id,
                     name: run.name,
-                    link: `=HYPERLINK("${testrailSettings.protocol}://${testrailSettings.url}/index.php?/runs/view/${run.id}", "${run.name}")`,
-                    created_on: convertToDateTime(run.created_on),
-                    completed_on: convertToDateTime(run.completed_on),
-                    created_by: getUserName(run.created_by),
-                    tests_count: totalTests,
-                    blocked_count: run.blocked_count,
-                    failed_count: run.failed_count,
-                    untested_count: totalTests - run.blocked_count - run.failed_count - run.passed_count,
+                    Link: `=HYPERLINK("${testrailSettings.protocol}://${testrailSettings.url}/index.php?/runs/view/${run.id}", "${run.name}")`,
+                    "Created On": convertToDateTime(run.created_on),
+                    "Completed On": convertToDateTime(run.completed_on),
+                    "Created By": getUserEmail(run.created_by),
+                    "Tests Count": totalTests,
+                    "Blocked": run.blocked_count,
+                    "Failed": run.failed_count,
+                    "Untested": totalTests - run.blocked_count - run.failed_count - run.passed_count,
                     jiraKey: jiraKey,
-                    jiraTask: jiraKey ? `=HYPERLINK("${jUrl}/browse/${jiraKey}", "${jiraKey}")` : ""
+                    "JIRA": jiraKey ? `=HYPERLINK("${jUrl}/browse/${jiraKey}", "${jiraKey}")` : ""
                 }
 
                 if (run.project_id != PROJECT_ID) {
@@ -164,13 +170,27 @@ testrailOperation.getUsers(function (userList, err) {
                     extendRunInfo(runInfo, resolve);
                     runInfos.push(runInfo);
                 }));
+
+                
+                if (jiraKey) {
+                    extendingRunInfos.push(new Promise(resolve => {
+                        jiraOperation.getTimesheet(jiraKey, function (worklog) {
+                            var totalHours = 0;
+                            worklog.filter(_ => _.authorEmail === runInfo["Created By"]).forEach(_ => totalHours += _.spent);
+                            runInfo['JIRA Time Spent (min)'] = totalHours;
+                            resolve();
+                        });
+                    }));
+                }
             }
         });
 
         Promise.all(extendingRunInfos).then(() => {
             var json2csv = require('json2csv');
             var outputFile = `testRail_${formatTodayDate()}.csv`;
-            var csv = json2csv({ data: runInfos, fields: ['id','link','created_on', 'completed_on', 'created_by', 'tests_count', 'blocked_count', 'failed_count', 'untested_count', 'jiraTask', 'manualTimeSpent', 'jiraTimeSpent'  ] });
+            var csv = json2csv({ data: runInfos, fields: ['Id','Link','Created On', 'Completed On', "Created By", 
+            'Tests Count', 'Blocked',
+            'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)'  ] });
             fs.writeFileSync(outputFile, csv, { encoding: 'utf-8' });
             console.log(`Stats are saved to ${outputFile}`);
             process.exit(0);
