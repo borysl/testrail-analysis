@@ -1,6 +1,6 @@
-# Project Title
+# TestRail-analysis
 
-Tool creats solid daily CSV report by getting data from test rail from one side and JIRA from another.
+Tool creats solid daily CSV report by getting data from [TestRail](http://www.gurock.com/testrail/) from one side and [Atlassian JIRA](https://jira.atlassian.com/) from another.
 
 ## Getting Started
 
