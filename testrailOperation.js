@@ -21,7 +21,7 @@ function TestrailOperation(testrailSettings, teamSettings) {
         options.path += query;
 
         var req = http.request(options, function (res) {
-            console.log(`Requesting: ${options.hostname}${options.path}`);
+            console.log(`Requesting: http://${options.hostname}${options.path}`);
             var chunks = [];
 
             res.on("data", function (chunk) {
@@ -56,11 +56,20 @@ function TestrailOperation(testrailSettings, teamSettings) {
     }
 
     self.getRuns = function (milestoneId, callback) {
-        waitResponseFromGetRequest(`get_runs/${projectId}&milestone_id=${milestoneId}`, callback);
+        if (typeof milestoneId == "function") {
+            callback = milestoneId;
+            waitResponseFromGetRequest(`get_runs/${projectId}`, callback);
+        } else {
+            waitResponseFromGetRequest(`get_runs/${projectId}&milestone_id=${milestoneId}`, callback);
+        }
     }
 
-    self.getTests = function (suiteId, callback) {
-        waitResponseFromGetRequest(`get_tests/${suiteId}`, callback);
+    self.getTests = function (runId, callback) {
+        waitResponseFromGetRequest(`get_tests/${runId}`, callback);
+    }
+
+    self.getResults = function(runId, callback) {
+        waitResponseFromGetRequest(`get_results_for_run/${runId}`, callback);
     }
 
     self.getStatuses = function (callback) {
@@ -75,6 +84,10 @@ function TestrailOperation(testrailSettings, teamSettings) {
         waitResponseFromGetRequest(`get_cases/${projectId}&suite_id=${suiteId}`, callback);
     }
 
+    self.getCase = function (caseId, callback) {
+        waitResponseFromGetRequest(`get_case/${caseId}`, callback);
+    }
+    
     self.getSubmilestones = function (milestoneId, callback) {
         waitResponseFromGetRequest(`get_milestone/${milestoneId}`, function(fullMilestone, err) {
             if (fullMilestone) {
@@ -84,6 +97,11 @@ function TestrailOperation(testrailSettings, teamSettings) {
             }
         });
     }
+
+    self.getUsers = function (callback) {
+        waitResponseFromGetRequest(`get_users`, callback);
+    }
+
     return self;
 }
 
