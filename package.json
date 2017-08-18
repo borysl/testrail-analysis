@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/borysl/testrail-analysis/issues"
   },
-  "homepage": "https://github.com/borysl/testrail-analysis#readme"
+  "homepage": "https://github.com/borysl/testrail-analysis#readme",
+  "dependencies": {
+    "json2csv": "^3.11.1"
+  }
 }

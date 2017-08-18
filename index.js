@@ -6,14 +6,14 @@ var fs = require('fs');
 var testrailSettings = JSON.parse(fs.readFileSync(__base + 'testrailSettings.json', 'utf8'));
 var teamSettings = JSON.parse(fs.readFileSync(__base + 'teamSettings.json', 'utf8'));
 
-const PROJECT_ID = 7;
-const AUTOTESTS_ID = 9;
-const AVERAGE_TIME = 10;
-const UNTESTED_STATUS_ID = 3;
+const PROJECT_ID = teamSettings.project_id;
+const AUTOTESTS_ID = teamSettings.auto_tests_id;
+const AVERAGE_TIME = teamSettings.average_manual_test_execution_time;
+const UNTESTED_STATUS_ID = teamSettings.untested_status_id;
 
 var users = [];
-var manual_case_types = [15, 17, 20, 21];
-var manual_custom_executiontypes = [1];
+var manual_case_types = teamSettings.manual_case_types;
+var manual_custom_executiontypes = teamSettings.manual_custom_executiontypes;
 
 var jUrl = `${testrailSettings.jiraSettings.protocol}://${testrailSettings.jiraSettings.url}`;
 

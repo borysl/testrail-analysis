@@ -2,7 +2,7 @@ var http = require("http");
 
 function TestrailOperation(testrailSettings, teamSettings) {
     var self = this;
-    var projectId = teamSettings.projectId;
+    var projectId = teamSettings.project_id;
 
     var optionsTemplate = {
         "method": "GET",

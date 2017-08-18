@@ -1,4 +1,8 @@
 {
-    "projectName": "Infrastructure",
-    "projectId": "7"
+    "project_id": 7,
+    "auto_tests_id": 9,
+    "average_manual_test_execution_time": 10,
+    "untested_status_id": 3,
+    "manual_case_types": [ 15, 17, 20, 21 ],
+    "manual_custom_executiontypes": [ 1 ]
 }

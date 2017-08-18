@@ -2,5 +2,9 @@
     "protocol" : "http",
     "url": "<testrail.url>",
     "login": "<userName>",
-    "password": "<password>"
+    "password": "<password>",
+    "jiraSettings" : {
+        "protocol" : "https",
+        "url": "jira.corp"
+    }
 }
