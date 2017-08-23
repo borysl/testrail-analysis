@@ -16,7 +16,7 @@ function JiraOperation(jiraSettings) {
         }
     };
 
-    function waitResponseFromGetRequest(query, callback) {
+    function waitResponseFromGetRequest(query, callback, fault) {
         var options = JSON.parse(JSON.stringify(optionsTemplate)); 
 
         options.path = query;
@@ -33,22 +33,27 @@ function JiraOperation(jiraSettings) {
             res.on("end", function () {
                 var bodyBuffer = Buffer.concat(chunks);
                 var bodyString = bodyBuffer.toString();
-                if (bodyString.startsWith('<')) {
-                    // something went wrong. Try it once more immediately
-                        console.log(`Failure on getting ${fullPath}. Retrying...`);
-                        waitResponseFromGetRequest(query, callback);
-                    return;
-                }
-                var response = JSON.parse(bodyString);
-                
-                if (callback) {
-                    if (response.error) {
-                        callback(null, response.error); 
+                try {
+                    var response = JSON.parse(bodyString);
+
+                    if (callback) {
+                        if (response.errors) {
+                            callback(null, response.errors); 
+                        } else {
+                            callback(response);
+                        }
                     } else {
-                        callback(response); 
+                        console.log('Success!');
                     }
-                } else {
-                    console.log(`Getting response ${response}`);
+                } catch(e) {
+                    // something went wrong. Try it once more immediately
+                    if (!fault) {
+                        console.log(`Retrying on failure ${options.method} on ${options.path}.`);
+                        processRequest(options, callback, fieldsSetText, true);
+                    } else {
+                        callback(null, new Error(`Failure ${options.method} on ${options.path}.`))
+                    }
+                    return;
                 }
             });
 

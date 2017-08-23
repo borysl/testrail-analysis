@@ -1,7 +1,5 @@
 var __base = __dirname + '/';
 
-var TestrailOperation = require(__base + 'testrailOperation');
-
 var fs = require('fs');
 var testrailSettings = JSON.parse(fs.readFileSync(__base + 'testrailSettings.json', 'utf8'));
 var teamSettings = JSON.parse(fs.readFileSync(__base + 'teamSettings.json', 'utf8'));
@@ -23,7 +21,13 @@ var manual_custom_executiontypes = teamSettings.manual_custom_executiontypes;
 
 var jUrl = `${testrailSettings.jiraSettings.protocol}://${testrailSettings.jiraSettings.url}`;
 
-var testrailOperation = new TestrailOperation(testrailSettings, teamSettings);
+var Testrail = require('testrail-api');
+
+var testrail = new Testrail({
+    host: `${testrailSettings.protocol}://${testrailSettings.url}`,
+    user: testrailSettings.login,
+    password: testrailSettings.password
+});
 
 function formatTodayDate() {
     var d = new Date();
@@ -57,16 +61,9 @@ function checkInterruptCondition(condition, message) {
     }
 }
 
-// https://stackoverflow.com/questions/9229645/remove-duplicates-from-javascript-array
-function uniq(a) {
-    return a.sort().filter(function(item, pos, ary) {
-        return !pos || item != ary[pos - 1];
-    })
-}
-
 function extractJiraTask(runName) {
     if (!runName) return null;
-    var regEx = /\/([A-Z]{2,9}\-\d+)\-/;
+    var regEx = /\/([A-Z]{2,9}-\d+)-/;
     var analyze = runName.match(regEx);
     return analyze == null ? null : analyze[1];
 }
@@ -95,7 +92,7 @@ function isExecutedManualTest(test) {
 }
 
 function extendRunInfo(runInfo, callback) {
-    testrailOperation.getTests(runInfo.Id, function(tests, err) {
+    testrail.getTests(runInfo.Id, function(err, tests) {
         handleFatal(err, `Can't get results from suite ${runInfo.Id}`, 4);
         runInfo['Manual Time Spent (min)'] = 0;
         tests.filter(isExecutedManualTest).forEach(test => {
@@ -106,16 +103,16 @@ function extendRunInfo(runInfo, callback) {
 }
 
 function convertToDateTime(unixTimestamp) {
-    var int = parseInt(unixTimestamp)
+    var int = parseInt(unixTimestamp);
     if (int) {
         return isoDate(new Date(int * 1000));
     } else {
-        return "not yet";
+        return 'not yet';
     }
 }
 
 
-testrailOperation.getUsers(function(userList, err) {
+testrail.getUsers(function(err, userList) {
     handleFatal(err, "Can't get users", 2);
     users = userList;
 
@@ -124,8 +121,8 @@ testrailOperation.getUsers(function(userList, err) {
         return selectedUsers.length == 1 ? selectedUsers[0].email.toLowerCase() : null;
     }
 
-    testrailOperation.getRuns(function(runs, err) {
-        handleFatal(err, `Can't get milestones from project id=${PROJECT_ID}`, 2);
+    testrail.getRuns(PROJECT_ID, function(err, runs) {
+        handleFatal(err, `Can't get runs from project id=${PROJECT_ID}`, 2);
 
         var manualRuns = runs.filter(_ => _.created_by != AUTOTESTS_ID);
         checkInterruptCondition(manualRuns.length == 0, 'No manual runs found. Exiting.');
@@ -150,16 +147,16 @@ testrailOperation.getUsers(function(userList, err) {
                     suite_id: run.suite_id,
                     name: run.name,
                     Link: `=HYPERLINK("${testrailSettings.protocol}://${testrailSettings.url}/index.php?/runs/view/${run.id}", "${run.name}")`,
-                    "Created On": convertToDateTime(run.created_on),
-                    "Completed On": convertToDateTime(run.completed_on),
-                    "Created By": getUserEmail(run.created_by),
-                    "Tests Count": totalTests,
-                    "Blocked": run.blocked_count,
-                    "Failed": run.failed_count,
-                    "Untested": totalTests - run.blocked_count - run.failed_count - run.passed_count,
+                    'Created On': convertToDateTime(run.created_on),
+                    'Completed On': convertToDateTime(run.completed_on),
+                    'Created By': getUserEmail(run.created_by),
+                    'Tests Count': totalTests,
+                    'Blocked': run.blocked_count,
+                    'Failed': run.failed_count,
+                    'Untested': totalTests - run.blocked_count - run.failed_count - run.passed_count,
                     jiraKey: jiraKey,
-                    "JIRA": jiraKey ? `=HYPERLINK("${jUrl}/browse/${jiraKey}", "${jiraKey}")` : ""
-                }
+                    'JIRA': jiraKey ? `=HYPERLINK("${jUrl}/browse/${jiraKey}", "${jiraKey}")` : ""
+                };
 
                 if (run.project_id != PROJECT_ID) {
                     console.log('Wrong project detected');
@@ -176,7 +173,7 @@ testrailOperation.getUsers(function(userList, err) {
                     extendingRunInfos.push(new Promise(resolve => {
                         jiraOperation.getTimesheet(jiraKey, function(worklog) {
                             var totalHours = 0;
-                            worklog.filter(_ => _.authorEmail === runInfo["Created By"]).forEach(_ => totalHours += _.spent);
+                            worklog.filter(_ => _.authorEmail === runInfo['Created By']).forEach(_ => totalHours += _.spent);
                             runInfo['JIRA Time Spent (min)'] = totalHours;
                             resolve();
                         });
@@ -190,7 +187,7 @@ testrailOperation.getUsers(function(userList, err) {
             var outputFile = `testRail_${formatTodayDate()}.csv`;
             var csv = json2csv({
                 data: runInfos,
-                fields: ['Id', 'Link', 'Created On', 'Completed On', "Created By",
+                fields: ['Id', 'Link', 'Created On', 'Completed On', 'Created By',
                     'Tests Count', 'Blocked',
                     'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)'
                 ]
@@ -201,5 +198,5 @@ testrailOperation.getUsers(function(userList, err) {
             console.log(`Stats are saved to ${outputFile}`);
             process.exit(0);
         });
-    })
+    });
 });
