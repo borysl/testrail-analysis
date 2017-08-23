@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/borysl/testrail-analysis#readme",
   "dependencies": {
-    "json2csv": "^3.11.1"
+    "json2csv": "^3.11.1",
+    "testrail-api": "^1.0.6"
   }
 }

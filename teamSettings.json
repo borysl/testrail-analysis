@@ -1,4 +1,5 @@
 {
+    "project_name": "Infrastructure",
     "project_id": 7,
     "auto_tests_id": 9,
     "average_manual_test_execution_time": 10,

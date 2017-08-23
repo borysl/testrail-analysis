@@ -1,4 +1,4 @@
-global.__base = __dirname + '/';
+var __base = __dirname + '/';
 
 var TestrailOperation = require(__base + 'testrailOperation');
 
@@ -28,9 +28,9 @@ var testrailOperation = new TestrailOperation(testrailSettings, teamSettings);
 function formatTodayDate() {
     var d = new Date();
     var
-    month = '' + (d.getMonth() + 1),
-    day = '' + d.getDate(),
-    year = d.getFullYear();
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
 
     if (month.length < 2) month = '0' + month;
     if (day.length < 2) day = '0' + day;
@@ -48,7 +48,7 @@ function handleFatal(err, message, code) {
         console.log(`Fatal: ${message}`);
         process.exit(code);
     }
-}   
+}
 
 function checkInterruptCondition(condition, message) {
     if (condition) {
@@ -85,7 +85,7 @@ function extractMinutes(timeString) {
 
 function isAutomatedTestCase(test) {
     return manual_case_types.indexOf(test.type_id) == -1 &&
-    manual_custom_executiontypes.indexOf(test.custom_executiontype) == -1;
+        manual_custom_executiontypes.indexOf(test.custom_executiontype) == -1;
 }
 
 function isExecutedManualTest(test) {
@@ -115,7 +115,7 @@ function convertToDateTime(unixTimestamp) {
 }
 
 
-testrailOperation.getUsers(function (userList, err) {
+testrailOperation.getUsers(function(userList, err) {
     handleFatal(err, "Can't get users", 2);
     users = userList;
 
@@ -124,7 +124,7 @@ testrailOperation.getUsers(function (userList, err) {
         return selectedUsers.length == 1 ? selectedUsers[0].email.toLowerCase() : null;
     }
 
-    testrailOperation.getRuns(function (runs, err) {
+    testrailOperation.getRuns(function(runs, err) {
         handleFatal(err, `Can't get milestones from project id=${PROJECT_ID}`, 2);
 
         var manualRuns = runs.filter(_ => _.created_by != AUTOTESTS_ID);
@@ -137,17 +137,17 @@ testrailOperation.getUsers(function (userList, err) {
         var extendingRunInfos = [];
 
         manualRuns.forEach(run => {
-            var totalTests = run.passed_count + run.blocked_count + run.untested_count + 
-            run.retest_count + run.failed_count + run.custom_status1_count + run.custom_status2_count
-            + run.custom_status3_count;
-        
+            var totalTests = run.passed_count + run.blocked_count + run.untested_count +
+                run.retest_count + run.failed_count + run.custom_status1_count + run.custom_status2_count +
+                run.custom_status3_count;
+
             if (totalTests > 0) {
                 var jiraKey = extractJiraTask(run.name);
                 if (!jiraKey) jiraKey = extractJiraTask(run.description);
-                
+
                 var runInfo = {
                     Id: run.id,
-                    suite_id : run.suite_id,
+                    suite_id: run.suite_id,
                     name: run.name,
                     Link: `=HYPERLINK("${testrailSettings.protocol}://${testrailSettings.url}/index.php?/runs/view/${run.id}", "${run.name}")`,
                     "Created On": convertToDateTime(run.created_on),
@@ -171,10 +171,10 @@ testrailOperation.getUsers(function (userList, err) {
                     runInfos.push(runInfo);
                 }));
 
-                
+
                 if (jiraKey) {
                     extendingRunInfos.push(new Promise(resolve => {
-                        jiraOperation.getTimesheet(jiraKey, function (worklog) {
+                        jiraOperation.getTimesheet(jiraKey, function(worklog) {
                             var totalHours = 0;
                             worklog.filter(_ => _.authorEmail === runInfo["Created By"]).forEach(_ => totalHours += _.spent);
                             runInfo['JIRA Time Spent (min)'] = totalHours;
@@ -188,13 +188,18 @@ testrailOperation.getUsers(function (userList, err) {
         Promise.all(extendingRunInfos).then(() => {
             var json2csv = require('json2csv');
             var outputFile = `testRail_${formatTodayDate()}.csv`;
-            var csv = json2csv({ data: runInfos, fields: ['Id','Link','Created On', 'Completed On', "Created By", 
-            'Tests Count', 'Blocked',
-            'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)'  ] });
-            fs.writeFileSync(outputFile, csv, { encoding: 'utf-8' });
+            var csv = json2csv({
+                data: runInfos,
+                fields: ['Id', 'Link', 'Created On', 'Completed On', "Created By",
+                    'Tests Count', 'Blocked',
+                    'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)'
+                ]
+            });
+            fs.writeFileSync(outputFile, csv, {
+                encoding: 'utf-8'
+            });
             console.log(`Stats are saved to ${outputFile}`);
             process.exit(0);
         });
     })
 });
-

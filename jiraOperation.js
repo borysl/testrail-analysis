@@ -16,10 +16,6 @@ function JiraOperation(jiraSettings) {
         }
     };
 
-    function toType(obj) {
-        return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
-    }
-
     function waitResponseFromGetRequest(query, callback) {
         var options = JSON.parse(JSON.stringify(optionsTemplate)); 
 
