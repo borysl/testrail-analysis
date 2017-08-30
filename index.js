@@ -173,8 +173,13 @@ testrail.getUsers(function(err, userList) {
                     extendingRunInfos.push(new Promise(resolve => {
                         jiraOperation.getTimesheet(jiraKey, function(worklog) {
                             var totalHours = 0;
-                            worklog.filter(_ => _.authorEmail === runInfo['Created By']).forEach(_ => totalHours += _.spent);
+                            var worklogNotes = '';
+                            worklog.filter(_ => _.authorEmail === runInfo['Created By']).forEach(function(worklog) {
+                                totalHours += worklog.spent;
+                                worklogNotes += `${worklog.spent/60}h: ${worklog.comment}`;
+                            });
                             runInfo['JIRA Time Spent (min)'] = totalHours;
+                            runInfo['JIRA worklog notes'] = worklogNotes;
                             resolve();
                         });
                     }));
@@ -187,9 +192,8 @@ testrail.getUsers(function(err, userList) {
             var outputFile = `testRail_${formatTodayDate()}.csv`;
             var csv = json2csv({
                 data: runInfos,
-                fields: ['Id', 'Link', 'Created On', 'Completed On', 'Created By',
-                    'Tests Count', 'Blocked',
-                    'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)'
+                fields: ['Id', 'Link', 'Created On', 'Completed On', 'Created By', 'Tests Count', 'Blocked',
+                    'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)', 'JIRA worklog notes'
                 ]
             });
             fs.writeFileSync(outputFile, csv, {
