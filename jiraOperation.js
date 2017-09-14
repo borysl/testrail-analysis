@@ -50,7 +50,7 @@ function JiraOperation(jiraSettings) {
                             console.log(`Retrying on failure ${options.method} on ${options.path}.`);
                             processRequestByOptions(options, callback, true);
                         } else {
-                            callback(null, new Error(`Failure ${options.method} on ${options.path}.`))
+                            callback(null, new Error(`Failure ${options.method} on ${options.path}.`));
                         }
                         return;
                     }
@@ -90,7 +90,7 @@ function JiraOperation(jiraSettings) {
                 callback(worklogs);
             });
         });
-    }
+    };
 
     function getTaskWorklog(issuekey, callback) {
         var requestWorklogXml = `/rest/api/2/issue/${issuekey}/worklog`;
