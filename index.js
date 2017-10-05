@@ -68,6 +68,13 @@ function extractJiraTask(runName) {
     return analyze == null ? null : analyze[1];
 }
 
+function extractBranchName(releaseName) {
+    if (!releaseName) return null;
+    var regEx = /(feature\/[-\dA-Za-z\.]+)(_\d+){0,1}$/;
+    var analyze = releaseName.match(regEx);
+    return analyze == null ? null : analyze[1];
+}
+
 function extractMinutes(timeString) {
     var regEx = /(\d+)([mh])/;
     if (timeString == null) return AVERAGE_TIME;
@@ -112,6 +119,7 @@ function extendRunInfo(runInfo, callback) {
             testrail.getMilestone(runInfo.releaseId, function(err, milestone) {
                 handleFatal(err, `Can't get release from id=${runInfo.releaseId}`, 5);
                 runInfo.Release = `=HYPERLINK("${milestone.url}", "${milestone.name}")`;
+                runInfo.releaseName = milestone.name;
                 runInfo.projectId = milestone.parent_id;
                 if (runInfo.projectId) {
                     testrail.getMilestone(runInfo.projectId, function(err, parentMilestone) {
@@ -193,12 +201,13 @@ function getFullReport() {
 
                             var jiraKey = extractJiraTask(runInfo.name);
                             if (!jiraKey) jiraKey = extractJiraTask(runInfo.description);
-                            if (!jiraKey && runInfo.Release) {
-                                jiraKey = extractJiraTask(runInfo.Release);
+                            if (!jiraKey && runInfo.releaseName) {
+                                jiraKey = extractJiraTask(runInfo.releaseName);
                             }
     
                             runInfo.jiraKey = jiraKey;
                             runInfo['JIRA'] = jiraKey ? `=HYPERLINK("${jUrl}/browse/${jiraKey}", "${jiraKey}")` : '';
+                            runInfo['Branch'] = extractBranchName(runInfo.releaseName);
                             if (runInfo.jiraKey) {
                                 jiraOperation.getTimesheet(jiraKey, function(worklog) {
                                     var totalHours = 0;
@@ -219,8 +228,6 @@ function getFullReport() {
                 }
             });
 
-            console.log(`Total extendingRunInfos ${extendingRunInfos.length}`);
-
             Promise.all(extendingRunInfos).then(() => {
                 var json2csv = require('json2csv');
                 runInfos.sort((a,b) => { return b.Id - a.Id; });
@@ -228,7 +235,7 @@ function getFullReport() {
                 var csv = json2csv({
                     data: runInfos,
                     fields: ['Id', 'Run', 'Release', 'Project', 'Created On', 'Completed On', 'Created By', 'Tests Count', 'Blocked',
-                        'Failed', 'Untested', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)', 'JIRA worklog notes',
+                        'Failed', 'Untested', 'Branch', 'JIRA', 'Manual Time Spent (min)', 'JIRA Time Spent (min)', 'JIRA worklog notes',
                         'Time saved (min)'
                     ]
                 });
